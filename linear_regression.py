@@ -14,7 +14,7 @@ class LeastSquaresRegression(ABC):
     def fit(self, X: npt.NDArray[np.float32], y: npt.NDArray[np.float32]):
         phi = self.phi(X)
         if self.regularization_coefficient:
-            tmp = np.linalg.inv(self.regularization_coefficient * np.eye(phi.T.shape[0]) @ phi.T @ phi)
+            tmp = np.linalg.inv(self.regularization_coefficient * np.eye(phi.T.shape[0]) + phi.T @ phi)
         else:
             tmp = np.linalg.inv(phi.T @ phi)
         self.W = tmp @ phi.T @ y
