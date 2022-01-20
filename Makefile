@@ -1,21 +1,34 @@
+export PYTHONPATH := $(shell pwd)
+
+.PHONY: test
+
 lint-ipynb:
-	nbqa mypy *.ipynb
+	nbqa mypy --strict notebooks/*.ipynb
 
 lint-py:
-	mypy *.py
+	mypy --strict prml/*.py
+	mypy --strict tests/*.py
 
-lint: lint-ipynb lint-py
+lint: lint-py lint-ipynb
 
 fmt-ipynb:
-	nbqa black *.ipynb
-	nbqa isort *.ipynb
-	nbqa pyupgrade *.ipynb --py36-plus
-	nbqa mdformat *.ipynb --nbqa-md --nbqa-diff
+	nbqa black notebooks/*.ipynb
+	nbqa isort notebooks/*.ipynb
+	nbqa pyupgrade notebooks/*.ipynb --py36-plus
+	nbqa mdformat notebooks/*.ipynb --nbqa-md --nbqa-diff
 
 fmt-py:
-	nbqa black *.ipynb
-	nbqa isort *.ipynb
-	nbqa pyupgrade *.ipynb --py36-plus
-	nbqa mdformat *.ipynb --nbqa-md --nbqa-diff
+	nbqa black notebooks/*.ipynb
+	nbqa isort notebooks/*.ipynb
+	nbqa pyupgrade notebooks/*.ipynb --py36-plus
+	nbqa mdformat notebooks/*.ipynb --nbqa-md --nbqa-diff
 
 fmt: fmt-ipynb fmt-py
+
+test:
+	pytest tests
+
+env:
+	echo "$$PYTHONPATH"
+
+all: fmt lint test

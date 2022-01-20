@@ -11,18 +11,16 @@ class LeastSquaresRegression(ABC):
     def phi(self, x: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
         pass
 
-    def fit(self, X: npt.NDArray[np.float32], y: npt.NDArray[np.float32]):
+    def fit(self, X: npt.NDArray[np.float32], y: npt.NDArray[np.float32]) -> None:
         phi = self.phi(X)
         if self.regularization_coefficient:
             tmp = np.linalg.inv(self.regularization_coefficient * np.eye(phi.T.shape[0]) + phi.T @ phi)
         else:
             tmp = np.linalg.inv(phi.T @ phi)
         self.W = tmp @ phi.T @ y
-        print(f"phi.shape {phi.shape}, self.W.shape {self.W.shape}")
 
     def predict(self, x: npt.NDArray[np.float32]) -> npt.NDArray[np.float32]:
         phi = self.phi(x)
-        print(f"W shape {self.W.shape}, phi shape {phi.shape}")
         return self.W @ phi.T
 
 class PolynomialBasisLeastSquaresRegression(LeastSquaresRegression):
