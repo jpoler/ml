@@ -1,6 +1,5 @@
 # TODO
 
-- make model an ABC w/ fit, predict
 - build helper functions
   - grid search with specified values
   - exponential grid search
