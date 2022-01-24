@@ -1,5 +1,4 @@
 export PYTHONPATH := $(shell pwd)
-export MYPYPATH := $(shell pwd)/prml
 
 .PHONY: test
 
@@ -7,8 +6,7 @@ lint-ipynb:
 	nbqa mypy --config-file=./mypy.ini notebooks/*.ipynb
 
 lint-py:
-	echo "$$MYPYPATH"
-	mypy --config-file=./mypy.ini prml/*.py tests/*.py
+	mypy --config-file=./mypy.ini prml tests
 
 lint: lint-py lint-ipynb
 
@@ -28,8 +26,5 @@ fmt: fmt-ipynb fmt-py
 
 test:
 	pytest tests
-
-env:
-	echo "$$PYTHONPATH"
 
 all: fmt lint test
