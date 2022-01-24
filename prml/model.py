@@ -8,5 +8,6 @@ class Model(Generic[T]):
     def fit(self, X: T, y: T) -> None:
         pass
 
+    @abstractmethod
     def predict(self, x: T) -> T:
         pass
