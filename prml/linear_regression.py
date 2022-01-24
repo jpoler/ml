@@ -3,18 +3,18 @@ import numpy as np
 import numpy.typing as npt
 from typing import Any, cast, Optional
 
-class LeastSquaresRegression(ABC):
+from .model import Model
+from .fixed_basis import FixedBasisFunctionMixin
+
+class LeastSquaresRegression(FixedBasisFunctionMixin[npt.NDArray[np.float64]],
+                             Model[npt.NDArray[np.float64]]):
     def __init__(self, regularization_coefficient: Optional[float] = None):
         self.regularization_coefficient = regularization_coefficient
-
-    @abstractmethod
-    def phi(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        pass
 
     def fit(self, X: npt.NDArray[np.float64], y: npt.NDArray[np.float64]) -> None:
         phi = self.phi(X)
         if self.regularization_coefficient:
-            inner = self.regularization_coefficient * np.eye(phi.T.shape[0]) + reg_mat + phi.T @ phi # type: ignore
+            inner = self.regularization_coefficient * np.eye(phi.T.shape[0]) + phi.T @ phi # type: ignore
         else:
             inner = phi.T @ phi
         inv = np.linalg.inv(inner) # type: ignore
