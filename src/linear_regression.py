@@ -3,8 +3,8 @@ import numpy as np
 import numpy.typing as npt
 from typing import Any, cast, Optional
 
-from .model import Model
-from .fixed_basis import FixedBasisFunctionMixin
+from model import Model
+from fixed_basis import FixedBasisFunctionMixin
 
 class LeastSquaresRegression(FixedBasisFunctionMixin[npt.NDArray[np.float64]],
                              Model[npt.NDArray[np.float64]]):

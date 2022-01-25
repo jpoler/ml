@@ -1,4 +1,4 @@
-export PYTHONPATH := $(shell pwd)
+export PYTHONPATH := $(shell pwd)/src
 
 .PHONY: test
 
@@ -6,7 +6,7 @@ lint-ipynb:
 	nbqa mypy --config-file=./mypy.ini notebooks/*.ipynb
 
 lint-py:
-	mypy --config-file=./mypy.ini prml tests
+	mypy --config-file=./mypy.ini src tests
 
 lint: lint-py lint-ipynb
 
