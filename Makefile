@@ -6,6 +6,7 @@ lint-ipynb:
 	nbqa mypy --config-file=./mypy.ini notebooks/*.ipynb
 
 lint-py:
+	pyflakes src tests
 	mypy --config-file=./mypy.ini src tests
 
 lint: lint-py lint-ipynb

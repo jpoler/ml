@@ -1,7 +1,6 @@
-from abc import ABC, abstractmethod
 import numpy as np
 import numpy.typing as npt
-from typing import Any, cast, Optional
+from typing import Any, Optional
 
 from model import Model
 from fixed_basis import PolynomialBasisMixin

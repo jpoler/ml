@@ -1,6 +1,4 @@
-import math
 import numpy as np
-import numpy.typing as npt
 
 from data.sin import SinData
 from metrics.variance import explained_variance
@@ -14,5 +12,6 @@ def test_polynomial_basis_least_squares_regression_explained_variance(sin_data: 
     y_true = np.sin(sin_data.x_test)
 
     print(explained_variance(y_pred, sin_data.y_test))
+    print(explained_variance(y_pred, y_true))
 
     assert False
