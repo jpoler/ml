@@ -13,6 +13,6 @@ def test_polynomial_basis_least_squares_regression_explained_variance(sin_data: 
     y_pred = model.predict(sin_data.x_test)
     y_true = np.sin(sin_data.x_test)
 
-    print(explained_variance(y_pred, y_true))
+    print(explained_variance(y_pred, sin_data.y_test))
 
     assert False

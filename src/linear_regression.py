@@ -4,11 +4,12 @@ import numpy.typing as npt
 from typing import Any, cast, Optional
 
 from model import Model
-from fixed_basis import FixedBasisFunctionMixin
+from fixed_basis import PolynomialBasisMixin
 
-class LeastSquaresRegression(FixedBasisFunctionMixin[npt.NDArray[np.float64]],
+class PolynomialBasisLeastSquaresRegression(PolynomialBasisMixin,
                              Model[npt.NDArray[np.float64]]):
-    def __init__(self, regularization_coefficient: Optional[float] = None):
+    def __init__(self, regularization_coefficient: Optional[float] = None, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
         self.regularization_coefficient = regularization_coefficient
 
     def fit(self, X: npt.NDArray[np.float64], y: npt.NDArray[np.float64]) -> None:
@@ -23,12 +24,3 @@ class LeastSquaresRegression(FixedBasisFunctionMixin[npt.NDArray[np.float64]],
     def predict(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         phi = self.phi(x)
         return self.W @ phi.T
-
-class PolynomialBasisLeastSquaresRegression(LeastSquaresRegression):
-    def __init__(self, m_degrees: int = 10, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.M = m_degrees
-
-    def phi(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        return np.stack(list(np.array(list(np.power(xi, m) for m in range(self.M))) for xi in x))
-
