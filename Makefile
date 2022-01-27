@@ -26,6 +26,6 @@ fmt-py:
 fmt: fmt-ipynb fmt-py
 
 test:
-	pytest tests
+	pytest -v tests
 
 all: fmt lint test

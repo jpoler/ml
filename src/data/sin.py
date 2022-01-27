@@ -19,7 +19,7 @@ def sin_data(
         n_test: int = 20,
         x_low: float = 0.,
         x_high: float = 2*np.pi,
-        noise_stddev: float = 1.,
+        noise_stddev: float = .5,
 ) -> SinData:
     rng = np.random.default_rng()
     n_total = n_train + n_test
