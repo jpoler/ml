@@ -1,7 +1,7 @@
 import numpy as np
 
 from data.sin import SinData
-from metrics.variance import explained_variance
+from metrics.regression import explained_variance
 from linear_regression import PolynomialBasisLeastSquaresRegression
 
 def test_polynomial_basis_least_squares_regression_explained_variance(sin_data: SinData) -> None:
