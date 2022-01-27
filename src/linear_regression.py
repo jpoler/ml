@@ -3,9 +3,9 @@ import numpy.typing as npt
 from typing import Any, Optional
 
 from model import Model
-from fixed_basis import PolynomialBasisMixin
+from fixed_basis import FixedBasisFunctionMixin, PolynomialBasisMixin
 
-class PolynomialBasisLeastSquaresRegression(PolynomialBasisMixin,
+class LeastSquaresRegression(FixedBasisFunctionMixin[npt.NDArray[np.float64]],
                              Model[npt.NDArray[np.float64]]):
     def __init__(self, regularization_coefficient: Optional[float] = None, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
@@ -23,3 +23,6 @@ class PolynomialBasisLeastSquaresRegression(PolynomialBasisMixin,
     def predict(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         phi = self.phi(x)
         return self.W @ phi.T
+
+class PolynomialBasisLeastSquaresRegression(PolynomialBasisMixin, LeastSquaresRegression):
+    pass
