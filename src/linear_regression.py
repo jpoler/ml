@@ -3,7 +3,7 @@ import numpy.typing as npt
 from typing import Any, Optional
 
 from model import Model
-from fixed_basis import FixedBasisFunctionMixin, PolynomialBasisMixin
+from fixed_basis import FixedBasisFunctionMixin, GaussianBasisMixin, PolynomialBasisMixin
 
 class LeastSquaresRegression(FixedBasisFunctionMixin[npt.NDArray[np.float64]],
                              Model[npt.NDArray[np.float64]]):
@@ -25,4 +25,7 @@ class LeastSquaresRegression(FixedBasisFunctionMixin[npt.NDArray[np.float64]],
         return self.W @ phi.T
 
 class PolynomialBasisLeastSquaresRegression(PolynomialBasisMixin, LeastSquaresRegression):
+    pass
+
+class GaussianBasisLeastSquaresRegression(GaussianBasisMixin, LeastSquaresRegression):
     pass
