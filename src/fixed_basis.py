@@ -16,4 +16,7 @@ class PolynomialBasisMixin(FixedBasisFunctionMixin[npt.NDArray[np.float64]]):
         self.M = m_degrees
 
     def phi(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        return np.stack(list(np.array(list(np.power(xi, m) for m in range(self.M))) for xi in x))
+        phi = np.empty((len(x), self.M))
+        for index, _ in np.ndenumerate(phi):
+            phi[index] = x[index[0]]**index[1]
+        return phi
