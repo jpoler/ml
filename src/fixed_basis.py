@@ -29,7 +29,6 @@ class GaussianBasisMixin(FixedBasisFunctionMixin[npt.NDArray[np.float64]]):
         self.means = np.linspace(self.low, self.high, self.num)
 
     def phi(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        print(f"stddev: {self.stddev}")
         phi = np.empty((len(x), self.num), dtype=np.float64)
         for index, _ in np.ndenumerate(phi):
             phi[index] = norm.pdf(x[index[0]], self.means[index[1]], self.stddev)
