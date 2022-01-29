@@ -29,12 +29,13 @@ class ParameterSpace(Generic[T]):
     data: Generator[Data[T], None, None]
     parameters: Generator[Parameters, None, None]
 
-    def __init__(self, model, keyword, base_parameters, space, data):
+    def __init__(self, model, keyword, base_parameters, space, base_data, data_slices):
         parameter_gen = parameter_generator(space, keyword, base_parameters)
+        data_gen = data_generator(base_data, data_slices)
         self.model = model
         self.keyword = keyword
         self.base_parameters = base_parameters
-        self.data = data
+        self.data = data_gen
         self.parameters = parameter_gen
 
 @dataclass
@@ -102,11 +103,7 @@ def grid_map(grid):
     for row in grid:
         yield [fit_and_predict(cell) for cell in row]
 
-def full_data_parameter_space(model, keyword, base_parameters, space, base_data):
-    data_gen = data_generator(base_data, full_data_slices(len(base_data.x_train)))
-    return ParameterSpace(model=model, keyword=keyword, base_parameters=base_parameters, space=space, data=data_gen)
-
-def full_data_grid(parameter_spaces):
+def expand_grid(parameter_spaces):
     gen = grid_generator(parameter_spaces)
     return list(grid_map(gen))
 
