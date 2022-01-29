@@ -1,7 +1,9 @@
 from abc import abstractmethod
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Sequence
+from numbers import Number
 
-T = TypeVar("T")
+# E = TypeVar("E")
+T = TypeVar("T", bound=Sequence[Number])
 
 class Model(Generic[T]):
     @abstractmethod

@@ -2,12 +2,11 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
+from data.data import Data
+
 @dataclass
-class SinData:
-    x_train: npt.NDArray[np.float64]
-    y_train: npt.NDArray[np.float64]
-    x_test: npt.NDArray[np.float64]
-    y_test: npt.NDArray[np.float64]
+class SinData(Data[npt.NDArray[np.float64]]):
+    pass
 
 @dataclass
 class SinCurve:
