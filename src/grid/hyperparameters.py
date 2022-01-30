@@ -55,10 +55,10 @@ def parameter_generator(space: Iterable[Any], keyword: str, base_parameters: Par
         d.update({keyword: p})
         yield d
 
-def increasing_subslices(low: int, high: int, subsets: int, n: int) -> Iterable[slice]:
-    k = n // subsets
+def increasing_subslices(low: int, high: int, subsets: int) -> Iterable[slice]:
+    k = (high - low) // subsets
     for i in range(1, subsets+1):
-        yield slice(0, i*k)
+        yield slice(low, low + i*k)
 
 def full_data_slices(n: int) -> Iterable[slice]:
     while True:
@@ -90,7 +90,7 @@ def compute_metric(grid: CellGridIterable, metric: MetricCallable) -> MetricGrid
     return [[metric(cell) for cell in row] for row in grid]
 
 def mean_squared_error_metric_cell(cell: Cell) -> float:
-    if not cell.predictions:
+    if cell.predictions is None:
         raise ValueError("expected predictions to be present")
     return mean_squared_error(cell.data.y_test, cell.predictions)
 
