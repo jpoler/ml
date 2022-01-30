@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from typing import Generic
-
-from model import T
+import numpy as np
+import numpy.typing as npt
 
 @dataclass
-class Data(Generic[T]):
-    x_train: T
-    y_train: T
-    x_test: T
-    y_test: T
+class Data:
+    x_train: npt.NDArray[np.float64]
+    y_train: npt.NDArray[np.float64]
+    x_test: npt.NDArray[np.float64]
+    y_test: npt.NDArray[np.float64]

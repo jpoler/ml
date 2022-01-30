@@ -5,8 +5,7 @@ from typing import Any, Optional
 from model import Model
 from fixed_basis import FixedBasisFunctionMixin, GaussianBasisMixin, PolynomialBasisMixin
 
-class LeastSquaresRegression(FixedBasisFunctionMixin[npt.NDArray[np.float64]],
-                             Model[npt.NDArray[np.float64]]):
+class LeastSquaresRegression(FixedBasisFunctionMixin, Model):
     def __init__(self, regularization_coefficient: Optional[float] = None, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.regularization_coefficient = regularization_coefficient

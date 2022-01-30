@@ -5,7 +5,7 @@ import numpy.typing as npt
 from data.data import Data
 
 @dataclass
-class SinData(Data[npt.NDArray[np.float64]]):
+class SinData(Data):
     pass
 
 @dataclass

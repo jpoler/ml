@@ -1,17 +1,15 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import numpy as np
 import numpy.typing as npt
 from scipy.stats import norm # type: ignore
-from typing import Any, TypeVar, Generic
+from typing import Any
 
-T = TypeVar("T")
-
-class FixedBasisFunctionMixin(Generic[T]):
+class FixedBasisFunctionMixin(ABC):
     @abstractmethod
-    def phi(self, x: T) -> T:
+    def phi(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         pass
 
-class PolynomialBasisMixin(FixedBasisFunctionMixin[npt.NDArray[np.float64]]):
+class PolynomialBasisMixin(FixedBasisFunctionMixin):
     def __init__(self, m_degrees: int = 10, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.M = m_degrees
@@ -22,7 +20,7 @@ class PolynomialBasisMixin(FixedBasisFunctionMixin[npt.NDArray[np.float64]]):
             phi[index] = x[index[0]]**index[1]
         return phi
 
-class GaussianBasisMixin(FixedBasisFunctionMixin[npt.NDArray[np.float64]]):
+class GaussianBasisMixin(FixedBasisFunctionMixin):
     def __init__(self, low: int = 0, high: int = 1, num: int = 2, stddev: float = 1., *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.low, self.high, self.num, self.stddev = low, high, num, stddev

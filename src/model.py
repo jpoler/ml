@@ -1,15 +1,12 @@
-from abc import abstractmethod
-from typing import TypeVar, Generic, Sequence
-from numbers import Number
+from abc import ABC, abstractmethod
+import numpy as np
+import numpy.typing as npt
 
-# E = TypeVar("E")
-T = TypeVar("T", bound=Sequence[Number])
-
-class Model(Generic[T]):
+class Model(ABC):
     @abstractmethod
-    def fit(self, X: T, y: T) -> None:
+    def fit(self, X: npt.NDArray[np.float64], y: npt.NDArray[np.float64]) -> None:
         pass
 
     @abstractmethod
-    def predict(self, x: T) -> T:
+    def predict(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         pass

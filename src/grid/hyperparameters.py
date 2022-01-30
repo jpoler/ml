@@ -2,16 +2,12 @@ from dataclasses import dataclass
 # from functools import partialmethod
 import numpy as np
 import numpy.typing as npt
-from typing import Any, Dict, Generator, Generic, Iterable, Optional, Type, TypeVar
-from numbers import Number
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Type
 
 from data.data import Data
 from metrics.regression import mean_squared_error
-from model import Model, T
+from model import Model
 
-# bound is model?
-C = TypeVar("C")
-# M = TypeVar("M", bound=Model[npt.NDArray[np.float64]])
 Parameters = Dict[str, Any]
 
 @dataclass
@@ -22,14 +18,14 @@ class PlotData:
     y_test: npt.NDArray[np.float64]
 
 @dataclass
-class ParameterSpace(Generic[T]):
-    model: Type[Model[T]]
+class ParameterSpace:
+    model: Type[Model]
     keyword: str
     base_parameters: Parameters
-    data: Generator[Data[T], None, None]
-    parameters: Generator[Parameters, None, None]
+    data: Iterable[Data]
+    parameters: Iterable[Parameters]
 
-    def __init__(self, model, keyword, base_parameters, space, base_data, data_slices):
+    def __init__(self, model: Type[Model], keyword: str, base_parameters: Parameters, space: Iterable[Any], base_data: Data, data_slices: Iterable[slice]) -> None:
         parameter_gen = parameter_generator(space, keyword, base_parameters)
         data_gen = data_generator(base_data, data_slices)
         self.model = model
@@ -39,75 +35,77 @@ class ParameterSpace(Generic[T]):
         self.parameters = parameter_gen
 
 @dataclass
-class GridCell(Generic[T]):
-    parameter_space: ParameterSpace[T]
-    data: Data[T]
+class Cell:
+    parameter_space: ParameterSpace
+    data: Data
     parameters: Parameters
-    predictions: Optional[T] = None
+    predictions: Optional[npt.NDArray[np.float64]] = None
 
+CellGridIterable = Iterable[Iterable[Cell]]
+CellGridList = List[List[Cell]]
+CellGridSequence = Sequence[Sequence[Cell]]
+MetricGridList = List[List[float]]
+MetricGridSequence = Sequence[Sequence[float]]
+MetricCallable = Callable[[Cell], float]
+GridMetricCallable = Callable[[CellGridIterable], MetricGridList]
 
-
-
-# def class_partially_bound_parameters(cls, *args, **kwargs):
-#     class NewCls(cls):
-#         __init__ = partialmethod(cls.__init__, *args, **kwargs)
-#     return NewCls
-
-# def plot_class_vs_parameter(plt, classes, param_name, params, plot_data) -> None:
-#     fig, axs = plt.subplots(len(params), len(classes), figsize=(8*len(classes), 8*len(params)))
-#     for c, cls in enumerate(classes):
-#         for r, p in enumerate(params):
-#             inst = cls(**{param_name:p})
-#             inst.fit(plot_data.x_train, plot_data.y_train)
-#             predictions = inst.predict(plot_data.x_test)
-#             axs[r, c].plot(plot_data.x_train, plot_data.y_train, "ro", plot_data.x_test, plot_data.y_test, "bo", plot_data.x_test, predictions, "gx")
-#             axs[r, c].set_title(f"class {cls.__name__} param: {p}")
-
-
-#     for ax in axs.flat:
-#         ax.set(xlabel='x-label', ylabel='y-label')
-#     # Hide x labels and tick labels for top plots and y ticks for right plots.
-#     for ax in axs.flat:
-#         ax.label_outer()
-
-def parameter_generator(space, keyword, base_parameters) -> Generator[Parameters, None, None]:
+def parameter_generator(space: Iterable[Any], keyword: str, base_parameters: Parameters) -> Iterable[Parameters]:
     for p in space:
         d = dict(base_parameters)
         d.update({keyword: p})
         yield d
 
-def increasing_subslices(low: int, high: int, subsets: int, n: int) -> Generator[slice, None, None]:
+def increasing_subslices(low: int, high: int, subsets: int, n: int) -> Iterable[slice]:
     k = n // subsets
     for i in range(1, subsets+1):
         yield slice(0, i*k)
 
-def full_data_slices(n: int) -> Generator[slice, None, None]:
+def full_data_slices(n: int) -> Iterable[slice]:
     while True:
         yield slice(0, n)
 
-def data_generator(base_data: Data[T], slices: Generator[slice, None, None]) -> Generator[Data[T], None, None]:
+def data_generator(base_data: Data, slices: Iterable[slice]) -> Iterable[Data]:
     # for brevity
     b = base_data
     for s in slices:
         yield Data(x_train=b.x_train[s], y_train=b.y_train[s], x_test=b.x_test[s], y_test=b.y_test[s])
 
-def row_generator(parameter_space, data_generator, parameter_generator):
+def row_generator(parameter_space: ParameterSpace, data_generator: Iterable[Data], parameter_generator: Iterable[Parameters]) -> Iterable[Cell]:
     for data, params in zip(data_generator, parameter_generator):
-        yield GridCell(parameter_space=parameter_space, data=data, parameters=params)
+        yield Cell(parameter_space=parameter_space, data=data, parameters=params)
 
-def grid_generator(parameter_spaces):
+def grid_generator(parameter_spaces: Iterable[ParameterSpace]) -> CellGridIterable:
     for parameter_space in parameter_spaces:
         yield row_generator(parameter_space, parameter_space.data, parameter_space.parameters)
 
-def grid_map(grid):
+def grid_map(grid: CellGridIterable) -> CellGridIterable:
     for row in grid:
         yield [fit_and_predict(cell) for cell in row]
 
-def expand_grid(parameter_spaces):
+def expand_grid(parameter_spaces: Iterable[ParameterSpace]) -> CellGridList:
     gen = grid_generator(parameter_spaces)
-    return list(grid_map(gen))
+    return list(list(row) for row in grid_map(gen))
 
-def plot_predictions(plt, grid):
+def compute_metric(grid: CellGridIterable, metric: MetricCallable) -> MetricGridList:
+    return [[metric(cell) for cell in row] for row in grid]
+
+def mean_squared_error_metric_cell(cell: Cell) -> float:
+    if not cell.predictions:
+        raise ValueError("expected predictions to be present")
+    return mean_squared_error(cell.data.y_test, cell.predictions)
+
+def mean_squared_error_metric(grid: CellGridIterable) -> MetricGridList:
+    return compute_metric(grid, mean_squared_error_metric_cell)
+
+def fit_and_predict(cell: Cell) -> Cell:
+    inst = cell.parameter_space.model(**cell.parameters)
+    inst.fit(cell.data.x_train, cell.data.y_train)
+    cell.predictions = inst.predict(cell.data.x_test)
+    return cell
+
+# todo find type of plt
+def plot_predictions(plt: Any, grid: CellGridSequence) -> None:
+    # reveal_type(plt)
     fig, axs = plt.subplots(len(grid[0]), len(grid), figsize=(8*len(grid), 8*len(grid[0])))
     for c, col in enumerate(grid):
         for r, cell in enumerate(col):
@@ -121,10 +119,8 @@ def plot_predictions(plt, grid):
     for ax in axs.flat:
         ax.label_outer()
 
-def compute_metric(grid, metric):
-    return [[metric(cell) for cell in row] for row in grid]
-
-def plot_metrics(plt, grid, metric):
+# todo find type of plt
+def plot_metrics(plt: Any, grid: CellGridSequence, metric: GridMetricCallable) -> None:
     metrics = metric(grid)
     fig, axs = plt.subplots(1, len(metrics), figsize=(8*len(grid), 8))
     for c, m in enumerate(metrics):
@@ -135,20 +131,3 @@ def plot_metrics(plt, grid, metric):
         axs[c].set(xlabel=parameter_space.keyword, ylabel=metric.__name__)
     for ax in axs.flat:
         ax.label_outer()
-
-def mean_squared_error_metric_cell(cell):
-    return mean_squared_error(cell.data.y_test, cell.predictions)
-
-def mean_squared_error_metric(grid):
-    return compute_metric(grid, mean_squared_error_metric_cell)
-
-def fit_and_predict(cell: GridCell[T]) -> GridCell[T]:
-    inst = cell.parameter_space.model(**cell.parameters)
-    inst.fit(cell.data.x_train, cell.data.y_train)
-    cell.predictions = inst.predict(cell.data.x_test)
-    return cell
-
-
-
-def plot_data_grid():
-    pass
