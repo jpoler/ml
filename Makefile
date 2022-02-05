@@ -6,8 +6,8 @@ lint-ipynb:
 	nbqa mypy --config-file=./mypy.ini notebooks/*.ipynb
 
 lint-py:
-	pyflakes src tests
 	mypy --config-file=./mypy.ini src tests
+	pyflakes src tests
 
 lint: lint-py lint-ipynb
 
@@ -27,5 +27,8 @@ fmt: fmt-ipynb fmt-py
 
 test:
 	pytest -v tests
+
+test-focused:
+	pytest -v -m focus tests
 
 all: fmt lint test

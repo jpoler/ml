@@ -1,14 +1,21 @@
 from pytest import fixture
 import numpy as np
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 from data.sin import sin_data as sindata, SinData
 from grid.hyperparameters import full_data_slices, ParameterSpace
 from linear_regression import PolynomialBasisLeastSquaresRegression
 
-@fixture
-def sin_data() -> SinData:
-    return sindata(n_train=1000, n_test=200)
+@fixture(scope="function")
+def sin_data(request: Any) -> SinData:
+    n_train = 1000
+    n_test = 1000
+    stddev = 0.5
+    if hasattr(request, "param") and request.param:
+        n_train = request.param.get("n_train", n_train)
+        n_test = request.param.get("n_test", n_test)
+        stddev = request.param.get("noise_stddev", stddev)
+    return sindata(n_train=n_train, n_test=n_test, noise_stddev=stddev)
 
 @fixture
 def sin_data_and_parameter_spaces(sin_data: SinData) -> Tuple[SinData, List[ParameterSpace]]:

@@ -3,13 +3,13 @@ import numpy as np
 import pytest
 
 from metrics.regression import mean_squared_error
-from constants import epsilon
+from constants import test_epsilon
 
 def test_mean_squared_error_known_variance() -> None:
     y_true = np.zeros(10)
     y_pred = np.ones(10)
     mse = mean_squared_error(y_true, y_pred)
-    assert math.isclose(mse, 1.0, rel_tol=epsilon)
+    assert math.isclose(mse, 1.0, rel_tol=test_epsilon)
 
 def test_mean_squared_error_positive() -> None:
     y_true = np.zeros(10)

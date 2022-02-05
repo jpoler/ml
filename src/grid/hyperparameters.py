@@ -40,6 +40,7 @@ class Cell:
     data: Data
     parameters: Parameters
     predictions: Optional[npt.NDArray[np.float64]] = None
+    model: Optional[Model] = None
 
 CellGridIterable = Iterable[Iterable[Cell]]
 CellGridList = List[List[Cell]]
@@ -55,9 +56,13 @@ def parameter_generator(space: Iterable[Any], keyword: str, base_parameters: Par
         d.update({keyword: p})
         yield d
 
+def single_slices(low: int, high: int) -> Iterable[slice]:
+    for i in range(low, high):
+        yield slice(low, low+1)
+
 def increasing_subslices(low: int, high: int, subsets: int) -> Iterable[slice]:
     k = (high - low) // subsets
-    for i in range(1, subsets+1):
+    for i in range(0, subsets+1):
         yield slice(low, low + i*k)
 
 def full_data_slices(n: int) -> Iterable[slice]:
@@ -101,6 +106,7 @@ def fit_and_predict(cell: Cell) -> Cell:
     inst = cell.parameter_space.model(**cell.parameters)
     inst.fit(cell.data.x_train, cell.data.y_train)
     cell.predictions = inst.predict(cell.data.x_test)
+    cell.model = inst
     return cell
 
 # todo find type of plt
@@ -118,6 +124,40 @@ def plot_predictions(plt: Any, grid: CellGridSequence) -> None:
         ax.set(xlabel='x', ylabel='y')
     for ax in axs.flat:
         ax.label_outer()
+
+def plot_bayesian_probabilities(plt: Any, grid: CellGridSequence) -> None:
+    fig, axs = plt.subplots(len(grid[0]), 3*len(grid), figsize=(24*len(grid), 8*len(grid[0])))
+    for c, col in enumerate(grid):
+        def max_eigenvalue(cell):
+            model = cell.model
+            covariance = model.posterior_covariance()
+            eigenvalues, _ = np.linalg.eig(covariance) # type: ignore
+            return max(eigenvalues)
+
+        def get_mean(cell):
+            model = cell.model
+            return model.posterior_mean()
+
+
+        radius = max(map(max_eigenvalue, col))*2
+        average_mean = sum(map(get_mean, col)) / float(len(col))
+        x = np.linspace(average_mean[0] - radius, average_mean[0] + radius, 50)
+        y = np.linspace(average_mean[1] - radius, average_mean[1] + radius, 50)
+        X, Y = np.meshgrid(x, y)
+        for r, cell in enumerate(col):
+            model = cell.model
+            print(dir(model))
+            print(model.__dict__)
+            mean = model.posterior_mean()
+            covariance = model.posterior_covariance()
+            eigenvalues, _ = np.linalg.eig(covariance) # type: ignore
+            max_eigenvalue = max(eigenvalues)
+            Z = np.empty(X.shape)
+            for ix, iy in np.ndindex(Z.shape):
+                Z[ix, iy] = model.posterior_probability(np.array([x[ix], y[iy]]))
+
+            axs[r,c].contour(x, y, Z)
+
 
 # todo find type of plt
 def plot_metrics(plt: Any, grid: CellGridSequence, metric: GridMetricCallable) -> None:

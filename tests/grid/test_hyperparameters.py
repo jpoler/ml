@@ -1,4 +1,5 @@
 from itertools import islice
+import numpy as np
 from typing import List, Tuple
 
 from grid.hyperparameters import (ParameterSpace, data_generator, expand_grid,
@@ -13,24 +14,22 @@ def test_parameter_generator() -> None:
         assert parameters["foo"] == 42
         assert parameters["bar"] == space[i]
 
-def test_increasing_subslices(sin_data: SinData) -> None:
-    low, high, n = (11, 21, 10)
+import pytest
+@pytest.mark.focus
+@pytest.mark.parametrize("arg_tuple", [(11, 21, 10), (50, 150, 10)])
+def test_increasing_subslices(sin_data: SinData, arg_tuple: Tuple[int, int, int]) -> None:
+    low, high, n = arg_tuple
+    k = (high-low) // n
     slices = increasing_subslices(low, high, n)
+    slice_count = 0
     for i, data in enumerate(data_generator(sin_data, slices)):
-        j = i
-        assert data.x_train[0] == sin_data.x_train[low]
-        assert data.x_train[-1] == sin_data.x_train[low+i]
-
-        assert data.y_train[0] == sin_data.y_train[low]
-        assert data.y_train[-1] == sin_data.y_train[low+i]
-
-        assert data.x_test[0] == sin_data.x_test[low]
-        assert data.x_test[-1] == sin_data.x_test[low+i]
-
-        assert data.y_test[0] == sin_data.y_test[low]
-        assert data.y_test[-1] == sin_data.y_test[low+i]
-
-    assert low + j == high - 1
+        slice_count += 1
+        print(low, low+(i+1)*k)
+        assert np.array_equal(data.x_train[0:(i+1)*k], sin_data.x_train[low:low+(i+1)*k])
+        assert np.array_equal(data.y_train[0:(i+1)*k], sin_data.y_train[low:low+(i+1)*k])
+        assert np.array_equal(data.x_test[0:(i+1)*k], sin_data.x_test[low:low+(i+1)*k])
+        assert np.array_equal(data.y_test[0:(i+1)*k], sin_data.y_test[low:low+(i+1)*k])
+    assert slice_count == n
 
 def test_full_data_slices(sin_data: SinData) -> None:
     n = 20

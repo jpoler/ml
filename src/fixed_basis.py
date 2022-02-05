@@ -9,10 +9,16 @@ class FixedBasisFunctionMixin(ABC):
     def phi(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         pass
 
+    @property
+    @abstractmethod
+    def basis_dimensionality(self) -> int:
+        pass
+
+
 class PolynomialBasisMixin(FixedBasisFunctionMixin):
     def __init__(self, m_degrees: int = 10, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
         self.M = m_degrees
+        super().__init__(*args, **kwargs)
 
     def phi(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         phi = np.empty((len(x), self.M), dtype=np.float64)
@@ -20,11 +26,16 @@ class PolynomialBasisMixin(FixedBasisFunctionMixin):
             phi[index] = x[index[0]]**index[1]
         return phi
 
+    @property
+    def basis_dimensionality(self) -> int:
+        return self.M
+
 class GaussianBasisMixin(FixedBasisFunctionMixin):
+    # todo replace num with "dim" or "dimensionality"
     def __init__(self, low: int = 0, high: int = 1, num: int = 2, stddev: float = 1., *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
         self.low, self.high, self.num, self.stddev = low, high, num, stddev
         self.means = np.linspace(self.low, self.high, self.num)
+        super().__init__(*args, **kwargs)
 
     def phi(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         phi = np.empty((len(x), self.num), dtype=np.float64)
@@ -32,5 +43,8 @@ class GaussianBasisMixin(FixedBasisFunctionMixin):
             phi[index] = norm.pdf(x[index[0]], self.means[index[1]], self.stddev)
         return phi
 
+    @property
+    def basis_dimensionality(self) -> int:
+        return self.num
 
 
