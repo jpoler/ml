@@ -2,9 +2,10 @@ from itertools import islice
 import numpy as np
 from typing import List, Tuple
 
+from data.sin import SinData
 from grid.hyperparameters import (ParameterSpace, data_generator, expand_grid,
                                   full_data_slices, increasing_subslices, mean_squared_error_metric, parameter_generator)
-from data.sin import SinData
+from linear_regression import PolynomialBasisLeastSquaresRegression
 
 
 def test_parameter_generator() -> None:
@@ -40,7 +41,7 @@ def test_full_data_slices(sin_data: SinData) -> None:
         len(data.x_test) == n
         len(data.y_test) == n
 
-def test_expand_grid(sin_data_and_parameter_spaces: Tuple[SinData, List[ParameterSpace]]) -> None:
+def test_expand_grid(sin_data_and_parameter_spaces: Tuple[SinData, List[ParameterSpace[PolynomialBasisLeastSquaresRegression]]]) -> None:
     sin_data, parameter_spaces = sin_data_and_parameter_spaces
     grid = expand_grid(parameter_spaces)
     assert len(grid) == 2
@@ -53,7 +54,7 @@ def test_expand_grid(sin_data_and_parameter_spaces: Tuple[SinData, List[Paramete
             assert cell.parameter_space.base_parameters == parameter_spaces[r].base_parameters
             assert cell.predictions is not None
 
-def test_mean_squared_error_metric(sin_data_and_parameter_spaces: Tuple[SinData, List[ParameterSpace]]) -> None:
+def test_mean_squared_error_metric(sin_data_and_parameter_spaces: Tuple[SinData, List[ParameterSpace[PolynomialBasisLeastSquaresRegression]]]) -> None:
     sin_data, parameter_spaces = sin_data_and_parameter_spaces
     grid = expand_grid(parameter_spaces)
     mse_grid = mean_squared_error_metric(grid)

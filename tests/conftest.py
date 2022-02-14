@@ -18,7 +18,7 @@ def sin_data(request: Any) -> SinData:
     return sindata(n_train=n_train, n_test=n_test, noise_stddev=stddev)
 
 @fixture
-def sin_data_and_parameter_spaces(sin_data: SinData) -> Tuple[SinData, List[ParameterSpace]]:
+def sin_data_and_parameter_spaces(sin_data: SinData) -> Tuple[SinData, List[ParameterSpace[PolynomialBasisLeastSquaresRegression]]]:
     parameter_spaces = [
         ParameterSpace(
             model=PolynomialBasisLeastSquaresRegression,

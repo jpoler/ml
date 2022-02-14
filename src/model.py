@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import numpy.typing as npt
+from typing import TypeVar
 
 
 class Model(ABC):
@@ -30,3 +31,15 @@ class BayesianModel(Model):
     @abstractmethod
     def predictive_probability(self, t: npt.NDArray[np.float64], x: npt.NDArray[np.float64]) -> float:
         pass
+
+class GaussianBayesianModel(BayesianModel):
+    @abstractmethod
+    def posterior_mean(self) -> npt.NDArray[np.float64]:
+        pass
+
+    @abstractmethod
+    def posterior_covariance(self) -> npt.NDArray[np.float64]:
+        pass
+
+M = TypeVar("M", bound=Model)
+GBM = TypeVar("GBM", bound=GaussianBayesianModel)
