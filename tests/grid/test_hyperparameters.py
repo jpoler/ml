@@ -16,7 +16,6 @@ def test_parameter_generator() -> None:
         assert parameters["bar"] == space[i]
 
 import pytest
-@pytest.mark.focus
 @pytest.mark.parametrize("arg_tuple", [(11, 21, 10), (50, 150, 10)])
 def test_increasing_subslices(sin_data: SinData, arg_tuple: Tuple[int, int, int]) -> None:
     low, high, n = arg_tuple
@@ -26,10 +25,10 @@ def test_increasing_subslices(sin_data: SinData, arg_tuple: Tuple[int, int, int]
     for i, data in enumerate(data_generator(sin_data, slices)):
         slice_count += 1
         print(low, low+(i+1)*k)
-        assert np.array_equal(data.x_train[0:(i+1)*k], sin_data.x_train[low:low+(i+1)*k])
-        assert np.array_equal(data.y_train[0:(i+1)*k], sin_data.y_train[low:low+(i+1)*k])
-        assert np.array_equal(data.x_test[0:(i+1)*k], sin_data.x_test[low:low+(i+1)*k])
-        assert np.array_equal(data.y_test[0:(i+1)*k], sin_data.y_test[low:low+(i+1)*k])
+        assert np.array_equal(data.x_train, sin_data.x_train[low:low+(i+1)*k])
+        assert np.array_equal(data.y_train, sin_data.y_train[low:low+(i+1)*k])
+        assert np.array_equal(data.x_test, sin_data.x_test[low:low+(i+1)*k])
+        assert np.array_equal(data.y_test, sin_data.y_test[low:low+(i+1)*k])
     assert slice_count == n
 
 def test_full_data_slices(sin_data: SinData) -> None:

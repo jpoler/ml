@@ -5,7 +5,7 @@ from scipy.stats import multivariate_normal # type: ignore
 from typing import Any, Callable, Optional, Tuple
 
 from constants import convergence_epsilon
-from model import BayesianModel, Model
+from model import GaussianBayesianModel, Model
 from fixed_basis import FixedBasisFunctionMixin, GaussianBasisMixin, PolynomialBasisMixin
 
 class LeastSquaresRegression(FixedBasisFunctionMixin, Model):
@@ -32,7 +32,7 @@ class PolynomialBasisLeastSquaresRegression(PolynomialBasisMixin, LeastSquaresRe
 class GaussianBasisLeastSquaresRegression(GaussianBasisMixin, LeastSquaresRegression):
     pass
 
-class BayesianLinearRegression(FixedBasisFunctionMixin, BayesianModel):
+class BayesianLinearRegression(FixedBasisFunctionMixin, GaussianBayesianModel):
     def __init__(self, alpha: float = 1., beta: float = 1., convergence_threshold: float = convergence_epsilon, max_evidence_iterations: int = 100, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.alpha: np.float64 = np.float64(alpha)

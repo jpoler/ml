@@ -1,5 +1,4 @@
-from dataclasses import asdict, dataclass
-# from functools import partialmethod
+from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Type
@@ -67,7 +66,7 @@ def single_slices(low: int, high: int) -> Iterable[slice]:
 
 def increasing_subslices(low: int, high: int, subsets: int) -> Iterable[slice]:
     k = (high - low) // subsets
-    for i in range(0, subsets+1):
+    for i in range(1, subsets+1):
         yield slice(low, low + i*k)
 
 def full_data_slices(n: int) -> Iterable[slice]:
@@ -142,7 +141,7 @@ def plot_bayesian_probabilities(plt: Any, grid: EvaluatedCellGridSequence[GBM]) 
     fig, axs = plt.subplots(len(grid[0]), 3*len(grid), figsize=(24*len(grid), 8*len(grid[0])))
     for c, col in enumerate(grid):
         radius = max(map(max_eigenvalue, col))*2
-        average_mean = np.add.reduce(map(get_mean, col)) / float(len(col))
+        average_mean = np.add.reduce(list(map(get_mean, col))) / float(len(col))
         x = np.linspace(average_mean[0] - radius, average_mean[0] + radius, 50)
         y = np.linspace(average_mean[1] - radius, average_mean[1] + radius, 50)
         X, Y = np.meshgrid(x, y) # type: ignore
