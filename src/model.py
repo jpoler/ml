@@ -25,7 +25,7 @@ class BayesianModel(Model):
     #     pass
 
     @abstractmethod
-    def likelihood_probability(self, X: npt.NDArray[np.float64]) -> float:
+    def likelihood_probability(self, X: npt.NDArray[np.float64], y: npt.NDArray[np.float64], w: npt.NDArray[np.float64]) -> float:
         pass
 
     @abstractmethod
@@ -33,6 +33,10 @@ class BayesianModel(Model):
         pass
 
 class GaussianBayesianModel(BayesianModel):
+    @abstractmethod
+    def sample_posterior_parameters(self) -> npt.NDArray[np.float64]:
+        pass
+
     @abstractmethod
     def posterior_mean(self) -> npt.NDArray[np.float64]:
         pass

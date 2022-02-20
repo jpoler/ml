@@ -17,7 +17,7 @@ def line_data(
         n_train: int = 80,
         n_test: int = 20,
         x_low: float = 0.,
-        x_high: float = 2*np.pi,
+        x_high: float = 1.,
         slope: float = 1.,
         intercept: float = 0.,
         noise_stddev: float = .5,

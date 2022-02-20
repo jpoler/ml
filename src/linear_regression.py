@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import numpy.typing as npt
-from scipy.stats import multivariate_normal # type: ignore
+from scipy.stats import norm, multivariate_normal # type: ignore
 from typing import Any, Callable, Optional, Tuple
 
 from constants import convergence_epsilon
@@ -33,7 +33,7 @@ class GaussianBasisLeastSquaresRegression(GaussianBasisMixin, LeastSquaresRegres
     pass
 
 class BayesianLinearRegression(FixedBasisFunctionMixin, GaussianBayesianModel):
-    def __init__(self, alpha: float = 1., beta: float = 1., convergence_threshold: float = convergence_epsilon, max_evidence_iterations: int = 100, *args: Any, **kwargs: Any):
+    def __init__(self, alpha: float = 1., beta: float = 1., convergence_threshold: float = convergence_epsilon, max_evidence_iterations: Optional[int] = 100, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.alpha: np.float64 = np.float64(alpha)
         self.beta: np.float64 = np.float64(beta)
@@ -73,8 +73,10 @@ class BayesianLinearRegression(FixedBasisFunctionMixin, GaussianBayesianModel):
 
 
     def fit(self, X: npt.NDArray[np.float64], y: npt.NDArray[np.float64]) -> None:
+        if len(X) == 0:
+            print("no data provided, returning")
+            return
         phi = self.phi(X)
-        print(f"phi: {phi}")
 
         # With new data, it is cheap (assuming low dim basis) to accumulate phi
         # which is MXM, where we just add the outer product of each phi(x_n) @
@@ -94,6 +96,8 @@ class BayesianLinearRegression(FixedBasisFunctionMixin, GaussianBayesianModel):
 
 
     def reestimate_evidence(self) -> None:
+        if not self.max_evidence_iterations:
+            return
         if self.n == 0:
             logging.warning("skipping reestimation, no data points")
             return
@@ -112,9 +116,6 @@ class BayesianLinearRegression(FixedBasisFunctionMixin, GaussianBayesianModel):
             distance_term: np.float64 = self.y_t_y - 2.*self.phi_t_y.T @ w_mean + w_mean.T @ self.phi_t_phi @ w_mean
             beta_inverse = (1 / (self.n - gamma)) *  distance_term
             beta = 1 / beta_inverse
-            print(f"gamma {gamma}")
-            print(f"alpha {alpha} alpha_old {alpha_old}")
-            print(f"beta {beta} beta_old {beta_old}")
             alpha_converged = abs(alpha - alpha_old) < self.convergence_threshold
             beta_converged = abs(beta - beta_old) < self.convergence_threshold
             # Now reestimate mean, covariance, and precision
@@ -134,7 +135,6 @@ class BayesianLinearRegression(FixedBasisFunctionMixin, GaussianBayesianModel):
 
 
     def predict(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        print(x.shape, len(x.shape))
         samples = []
         for i in range(len(x)):
             phi = self.phi(x[i:i+1])
@@ -154,8 +154,23 @@ class BayesianLinearRegression(FixedBasisFunctionMixin, GaussianBayesianModel):
         p: float = multivariate_normal.pdf(w, mean=self.w_mean, cov=self.w_covariance)
         return p
 
-    def likelihood_probability(self, X: npt.NDArray[np.float64]) -> float:
-        pass
+    def sample_posterior_parameters(self) -> npt.NDArray[np.float64]:
+        sample: npt.NDArray[np.float64] = multivariate_normal.rvs(mean=self.w_mean, cov=self.w_covariance)
+        return sample
+
+
+    def likelihood_probability(self, X: npt.NDArray[np.float64], y: npt.NDArray[np.float64], w: npt.NDArray[np.float64]) -> float:
+        if w is None:
+            w = self.w_mean
+        phi = self.phi(X)
+        locs: npt.NDArray[np.float64] = phi @ w
+        p = 1.
+        for i in range(len(locs)):
+            loc = locs[i]
+            t = y[i]
+            p *= norm.pdf(t, loc, 1./self.beta)
+        return p
+
 
     def predictive_probability(self, t: npt.NDArray[np.float64], x: npt.NDArray[np.float64]) -> float:
         phi = self.phi(x)

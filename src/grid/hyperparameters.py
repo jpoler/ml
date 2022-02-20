@@ -64,10 +64,13 @@ def single_slices(low: int, high: int) -> Iterable[slice]:
     for i in range(low, high):
         yield slice(low, low+1)
 
-def increasing_subslices(low: int, high: int, subsets: int) -> Iterable[slice]:
+def increasing_subslices(low: int, high: int, subsets: int, include_empty: bool=False) -> Iterable[slice]:
     k = (high - low) // subsets
-    for i in range(1, subsets+1):
+    start = 0 if include_empty else 1
+    stop = start + subsets
+    for i in range(start, stop):
         yield slice(low, low + i*k)
+
 
 def full_data_slices(n: int) -> Iterable[slice]:
     while True:
@@ -138,22 +141,53 @@ def get_mean(cell: EvaluatedCell[GBM]) -> npt.NDArray[np.float64]:
     return cell.model.posterior_mean()
 
 def plot_bayesian_probabilities(plt: Any, grid: EvaluatedCellGridSequence[GBM]) -> None:
+    if len(grid) < 1:
+        raise ValueError("expected at least 1 column")
+    if len(grid[0]) < 2:
+        raise ValueError("expected at least 2 rows")
     fig, axs = plt.subplots(len(grid[0]), 3*len(grid), figsize=(24*len(grid), 8*len(grid[0])))
     for c, col in enumerate(grid):
-        radius = max(map(max_eigenvalue, col))*2
+        data_per_iteration = len(col[1].data.x_train) - len(col[0].data.x_train)
+        radius = max(map(max_eigenvalue, col))*3
         average_mean = np.add.reduce(list(map(get_mean, col))) / float(len(col))
         x = np.linspace(average_mean[0] - radius, average_mean[0] + radius, 50)
         y = np.linspace(average_mean[1] - radius, average_mean[1] + radius, 50)
         X, Y = np.meshgrid(x, y) # type: ignore
         for r, cell in enumerate(col):
+            if len(cell.data.x_train) == 0:
+                continue
             model = cell.model
-            print(dir(model))
-            print(model.__dict__)
             Z = np.empty(X.shape)
             for ix, iy in np.ndindex(Z.shape):
-                Z[ix, iy] = model.posterior_probability(np.array([x[ix], y[iy]]))
-
-            axs[r,c].contour(x, y, Z)
+                Z[ix, iy] = model.likelihood_probability(
+                    cell.data.x_train[-data_per_iteration:],
+                    cell.data.y_train[-data_per_iteration:],
+                    np.array([X[ix, iy], Y[ix, iy]]),
+                )
+            axs[r,c].contourf(X, Y, Z)
+            axs[r,c].set_aspect('equal')
+            axs[r,c].set_title("parameter space\nlikelihood probability of added data")
+            axs[r,c].set(xlabel="w0", ylabel="w1")
+        for r, cell in enumerate(col):
+            model = cell.model
+            Z = np.empty(X.shape)
+            for ix, iy in np.ndindex(Z.shape):
+                Z[ix, iy] = model.posterior_probability(np.array([X[ix, iy], Y[ix, iy]]))
+            axs[r,c+1].contourf(X, Y, Z)
+            axs[r,c+1].set_aspect('equal')
+            axs[r,c+1].set_title("parameter space\nposterior probability")
+            axs[r,c+1].set(xlabel="w0", ylabel="w1")
+        for r, cell in enumerate(col):
+            for i in range(6):
+                model = cell.model
+                w = model.sample_posterior_parameters()
+                x = np.linspace(0, 1, 50)
+                b = np.ones(50)
+                X = np.vstack((b, x))
+                y = X.T @ w
+                axs[r,c+2].plot(x, y, "r-", cell.data.x_train, cell.data.y_train, "bo")
+                axs[r,c+2].set_title("data space")
+                axs[r,c+2].set(xlabel="x", ylabel="y")
 
 
 # todo find type of plt
