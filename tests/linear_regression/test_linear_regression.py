@@ -24,27 +24,41 @@ def test_polynomial_basis_least_squares_regression_baseline_r2_score(sin_data: S
     scores = []
     for i in (100,):
         x_train, y_train = sin_data.x_train[:i], sin_data.y_train[:i]
-        x_test, y_test = sin_data.x_test, sin_data.y_test
-        model = PolynomialBasisLeastSquaresRegression(m_degrees=10)
+        x_test, y_test = sin_data.x_test[:i], sin_data.y_test[:i]
+        model = PolynomialBasisLeastSquaresRegression(m_degrees=4)
         model.fit(x_train, y_train)
         y_pred = model.predict(x_test)
         r2 = r2_score(y_test, y_pred)
         scores.append(r2)
-        print(f"W: {model.W}")
-        print(f"W length: {np.linalg.norm(model.W)}") # type: ignore
 
-    print(f"least squares errors {scores}")
     assert all(e > 0.5 for e in scores)
 
-@pytest.mark.skip(reason="this test flaps, indicating that it's not a good test, rewrite")
+@pytest.mark.parametrize("sin_data", [dict(noise_stddev=.1)], indirect=True)
+def test_gaussian_basis_least_squares_regression_baseline_r2_score(sin_data: SinData) -> None:
+    scores = []
+    num_basis = 10
+    xmin, xmax = np.amin(sin_data.x_train), np.amax(sin_data.x_train)
+    stddev = (xmax - xmin) / num_basis
+    for i in (100,):
+        x_train, y_train = sin_data.x_train[:i], sin_data.y_train[:i]
+        x_test, y_test = sin_data.x_test[:i], sin_data.y_test[:i]
+        model = GaussianBasisLeastSquaresRegression(low=xmin, high=xmax, num=num_basis, stddev=stddev)
+        model.fit(x_train, y_train)
+        y_pred = model.predict(x_test)
+        r2 = r2_score(y_test, y_pred)
+        scores.append(r2)
+
+    assert all(e > 0.4 for e in scores)
+
+@pytest.mark.parametrize("sin_data", [dict(noise_stddev=.1)], indirect=True)
 def test_gaussian_basis_least_squares_regression_mean_squared_error_decreases_with_more_data(sin_data: SinData) -> None:
     errors = []
     num_basis = 10
-    xmin, xmax = np.amin(sin_data.x_train), np.amax(sin_data.y_train)
+    xmin, xmax = np.amin(sin_data.x_train), np.amax(sin_data.x_train)
     stddev = (xmax - xmin) / num_basis
-    for i in (1, 10, 500):
+    for i in (10, 50, 500):
         x_test, y_test = sin_data.x_train[:i], sin_data.y_train[:i]
-        model = GaussianBasisLeastSquaresRegression(low=xmin, high=xmax, num=10, stddev=stddev)
+        model = GaussianBasisLeastSquaresRegression(low=xmin, high=xmax, num=num_basis, stddev=stddev)
         model.fit(x_test, y_test)
         y_pred = model.predict(sin_data.x_test)
         y_true = np.sin(sin_data.x_test)
@@ -57,9 +71,9 @@ def test_gaussian_basis_least_squares_regression_mean_squared_error_decreases_wi
 def test_polynomial_basis_bayesian_linear_regression_baseline_r2_score(sin_data: SinData) -> None:
     scores = []
     num_basis = 10
-    for i in (30,):
+    for i in (50,):
         x_train, y_train = sin_data.x_train[:i], sin_data.y_train[:i]
-        x_test, y_test = sin_data.x_test, sin_data.y_test
+        x_test, y_test = sin_data.x_test[:i], sin_data.y_test[:i]
         model = PolynomialBasisBayesianLinearRegression(m_degrees=num_basis, max_evidence_iterations=100)
         model.fit(x_train, y_train)
         y_pred = model.predict(x_test)
@@ -67,34 +81,18 @@ def test_polynomial_basis_bayesian_linear_regression_baseline_r2_score(sin_data:
         scores.append(r2)
 
     print(f"r2_scores {scores}")
-    assert all([e > 0.5 for e in scores])
+    assert all([e > 0.4 for e in scores])
 
-def test_polynomial_basis_bayesian_linear_regression_precision_strictly_increases(sin_data: SinData) -> None:
-    precision_norms = []
+def test_polynomial_basis_bayesian_linear_regression_precision_eigenvalues_strictly_increase(sin_data: SinData) -> None:
+    precision_eigenvalues = []
     num_basis = 10
-    # first train the model with 100 data points to ensure convergence
-    model = PolynomialBasisBayesianLinearRegression(alpha=1., m_degrees=num_basis, max_evidence_iterations=100)
-    model.fit(sin_data.x_train[:30], sin_data.y_train[:30])
-    norm: float = np.linalg.norm(model.w_precision) # type: ignore
-    precision_norms.append(norm)
-    for data in hyperparameters.data_generator(sin_data, hyperparameters.single_slices(30, 40)):
+    model = PolynomialBasisBayesianLinearRegression(alpha=1., m_degrees=num_basis, max_evidence_iterations=None)
+    model.fit(sin_data.x_train[:100], sin_data.y_train[:100])
+    eigs, _ = np.linalg.eig(model.w_precision) # type: ignore
+    precision_eigenvalues.append(eigs)
+    for data in hyperparameters.data_generator(sin_data, hyperparameters.increasing_subslices(100, 1000, 9)):
         model.fit(data.x_train, data.y_train)
-        norm: float = np.linalg.norm(model.w_precision) # type: ignore
-        precision_norms.append(norm)
-    print(f"precision_norms: {precision_norms}")
-    assert sorted(precision_norms) == precision_norms
-
-def test_polynomial_basis_bayesian_linear_regression_gamma_strictly_increases(sin_data: SinData) -> None:
-    gammas = []
-    num_basis = 10
-    # first train the model with 100 data points to ensure convergence
-    model = PolynomialBasisBayesianLinearRegression(alpha=1., m_degrees=num_basis, max_evidence_iterations=100)
-    model.fit(sin_data.x_train[:30], sin_data.y_train[:30])
-    gamma = model.gamma(model.alpha, model.beta*model.phi_t_phi)
-    gammas.append(gamma)
-    for data in hyperparameters.data_generator(sin_data, hyperparameters.single_slices(30, 40)):
-        model.fit(data.x_train, data.y_train)
-        gamma = model.gamma(model.alpha, model.beta*model.phi_t_phi)
-        gammas.append(gamma)
-    print(f"gammas: {gammas}")
-    assert sorted(gammas) == gammas
+        eigs, _ = np.linalg.eig(model.w_precision) # type: ignore
+        precision_eigenvalues.append(eigs)
+    for i in range(1, len(precision_eigenvalues)):
+        assert (precision_eigenvalues[i-1] < precision_eigenvalues[i]).all()
