@@ -64,7 +64,7 @@ class LogisticRegression(FixedBasisFunctionMixin, Model):
             del_w = del_W.flatten("F")
             if np.allclose(del_W, np.zeros(del_W.shape)):
                 print("converged")
-                return
+                break
             # print(f"del_w:\n{np.array_str(del_w, precision=1, suppress_small=True)}")
             # print(f"H:\n{np.array_str(H, precision=10, suppress_small=True)}")
             H = H + np.eye(H.shape[0])
@@ -74,15 +74,17 @@ class LogisticRegression(FixedBasisFunctionMixin, Model):
             w_new = W_new.flatten("F") - H_inv @ del_w
             W_new = w_new.reshape(W_old.shape, order="F")
 
-        # print("after loop")
         self.W = W_new
 
     def predict(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         phi = self.phi(x)
         A: npt.NDArray[np.float64] = phi @ self.W
         S: npt.NDArray[np.float64] = softmax(A, axis=1)
-        M: npt.NDArray[np.float64] = S.argmax(axis=1)
-        return M
+        idx: npt.NDArray[np.float64] = S.argmax(axis=1)
+        X: npt.NDArray[np.float64] = np.arange(S.shape[0])
+        predictions: npt.NDArray[np.float64] = np.zeros(S.shape)
+        predictions[X, idx] = 1.
+        return predictions
 
 class PolynomialBasisLogisticRegression(PolynomialBasisMixin, LogisticRegression):
     pass
