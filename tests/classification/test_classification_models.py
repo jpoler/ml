@@ -47,7 +47,7 @@ gaussian_data = partial(gaussian_class_data,
     gaussian_data,
     iris_data,
 ])
-def test_logistic_regression_gaussian_data(model_init: Callable[[], SC], data_init: Callable[[], Data]) -> None:
+def test_classification_models(model_init: Callable[[], SC], data_init: Callable[[], Data]) -> None:
     # initialize data once to understand its shape
     data = data_init()
     k = len(data.y_test[0, :])
