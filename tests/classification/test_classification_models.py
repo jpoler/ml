@@ -7,7 +7,7 @@ from data.data import Data
 from data.iris_data import iris_data
 from data.gaussian_classes import gaussian_class_data
 from logistic_regression import PolynomialBasisLogisticRegression
-from metrics.classification import confusion_matrix, precision, recall, multiclass_roc_auc
+from metrics.classification import confusion_matrix, f1_macro, f1_micro, precision, recall, multiclass_roc_auc
 from model import SC
 
 gaussian_data = partial(gaussian_class_data,
@@ -40,6 +40,7 @@ gaussian_data = partial(gaussian_class_data,
                         n_test=30)
 
 
+@pytest.mark.focus
 @pytest.mark.parametrize("model_init", [
     partial(PolynomialBasisLogisticRegression, m_degrees=2),
 ])
@@ -54,6 +55,8 @@ def test_classification_models(model_init: Callable[[], SC], data_init: Callable
     ps = np.zeros(k)
     rs = np.zeros(k)
     overall_aucs = 0.
+    f1_micros = 0.
+    f1_macros = 0.
     pairwise_aucs = np.zeros((k, k))
     epochs = 10
     for i in range(epochs):
@@ -64,6 +67,8 @@ def test_classification_models(model_init: Callable[[], SC], data_init: Callable
         cm = confusion_matrix(data.y_test, y_pred)
         ps += precision(cm)
         rs += recall(cm)
+        f1_micros += f1_micro(cm)
+        f1_macros += f1_macro(cm)
         print(f"confusion matrix: {cm}")
         print(f"precision: {ps}")
         print(f"recall: {rs}")
@@ -73,11 +78,15 @@ def test_classification_models(model_init: Callable[[], SC], data_init: Callable
         pairwise_aucs += pairwise_auc
     print(f"average p: {(ps / float(epochs))}")
     print(f"average r: {(rs / float(epochs))}")
+    print(f"average f1_micro: {(f1_micros / float(epochs))}")
+    print(f"average f1_macro: {(f1_macros / float(epochs))}")
     print(f"average pairwise_aucs: {(pairwise_aucs / float(epochs))}")
     print(f"average overall_aucs: {(overall_aucs / float(epochs))}")
     assert np.all((ps / float(epochs)) > .5)
     assert np.all((rs / float(epochs)) > .5)
+    assert np.all((f1_micros / float(epochs)) > .7)
+    assert np.all((f1_macros / float(epochs)) > .7)
     for i in range(k):
         for j in range(i+1, k):
-            assert (pairwise_aucs[i][j] / float(epochs)) > .8
-    assert np.all((overall_aucs / float(epochs)) > .8)
+            assert (pairwise_aucs[i][j] / float(epochs)) > .7
+    assert np.all((overall_aucs / float(epochs)) > .7)
