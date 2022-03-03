@@ -9,12 +9,12 @@ from model import Model
 from fixed_basis import FixedBasisFunctionMixin, GaussianBasisMixin, PolynomialBasisMixin
 
 class LogisticRegression(FixedBasisFunctionMixin, Model):
-    def __init__(self, k_classes: int, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.k = k_classes
 
     def fit(self, X: npt.NDArray[np.float64], y: npt.NDArray[np.float64]) -> None:
         N = len(X)
+        k = len(y[0,:])
         if len(X.shape) == 1:
             X = X.reshape(len(X), 1)
         if N == 0:
@@ -22,20 +22,20 @@ class LogisticRegression(FixedBasisFunctionMixin, Model):
             return
         phi = self.phi(X)
         M = phi.shape[1]
-        self.W = np.random.random((M, self.k))
+        self.W = np.random.random((M, k))
         W_old: npt.NDArray[np.float64] = np.ones(self.W.shape) * np.inf
         W_new = self.W
         q = 0
-        while q < 100 and not np.allclose(W_old, W_new, rtol=0., atol=convergence_epsilon):
+        while q < 500 and not np.allclose(W_old, W_new, rtol=0., atol=convergence_epsilon):
             q += 1
             A: npt.NDArray[np.float64] = phi @ W_new
             S = softmax(A, axis=1)
-            H = np.zeros((M*self.k, M*self.k))
+            H = np.zeros((M*k, M*k))
             for n in range(N):
                 phi_n = phi[n,:]
                 outer = np.outer(phi_n, phi_n)
-                for r in range(self.k):
-                    for c in range(r, self.k):
+                for r in range(k):
+                    for c in range(r, k):
                         row_offset = r*M
                         col_offset = c*M
                         d = 1 if r == c else 0
@@ -47,7 +47,7 @@ class LogisticRegression(FixedBasisFunctionMixin, Model):
             del_W = phi.T @ (S - y)
             del_w = del_W.flatten("F")
             if np.allclose(del_W, np.zeros(del_W.shape), rtol=0, atol=convergence_epsilon):
-                print("converged")
+                print(f"converged: {q}")
                 break
             H = H + 0.01*np.eye(H.shape[0])
             H_inv = np.linalg.inv(H) # type: ignore
@@ -67,7 +67,7 @@ class LogisticRegression(FixedBasisFunctionMixin, Model):
         predictions[X, idx] = 1.
         return predictions
 
-    def predictive_probability(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    def soft_predict(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         phi = self.phi(x)
         A: npt.NDArray[np.float64] = phi @ self.W
         S: npt.NDArray[np.float64] = softmax(A, axis=1)

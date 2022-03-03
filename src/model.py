@@ -14,6 +14,11 @@ class Model(ABC):
     def predict(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         pass
 
+class SoftClassifier(Model):
+    @abstractmethod
+    def soft_predict(self, X: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        pass
+
 class BayesianModel(Model):
     @abstractmethod
     def posterior_probability(self, w: npt.NDArray[np.float64]) -> float:
@@ -46,4 +51,5 @@ class GaussianBayesianModel(BayesianModel):
         pass
 
 M = TypeVar("M", bound=Model)
+SC = TypeVar("SC", bound=SoftClassifier)
 GBM = TypeVar("GBM", bound=GaussianBayesianModel)
