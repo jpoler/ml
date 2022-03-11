@@ -43,7 +43,7 @@ gaussian_data = partial(gaussian_class_data,
 
 @pytest.mark.focus
 @pytest.mark.parametrize("model_init", [
-    # partial(PolynomialBasisLogisticRegression, m_degrees=2),
+    partial(PolynomialBasisLogisticRegression, m_degrees=2),
     partial(NeuralNetwork, hidden_units=[10], batch_size=1, learning_rate=0.04, max_iterations=1000),
 ])
 @pytest.mark.parametrize("data_init", [
@@ -60,7 +60,7 @@ def test_classification_models(model_init: Callable[[], SC], data_init: Callable
     f1_micros = 0.
     f1_macros = 0.
     pairwise_aucs = np.zeros((k, k))
-    epochs = 1
+    epochs = 10
     for i in range(epochs):
         data = data_init()
         model = model_init()

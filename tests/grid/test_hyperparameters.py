@@ -11,7 +11,7 @@ from linear_regression import PolynomialBasisLeastSquaresRegression
 def test_parameter_generator() -> None:
     space = list([i for i in range(10)])
     base_parameters = {"foo": 42}
-    for i, parameters in enumerate(parameter_generator(space, "bar", base_parameters)):
+    for i, parameters in enumerate(parameter_generator(space, base_parameters, "bar")):
         assert parameters["foo"] == 42
         assert parameters["bar"] == space[i]
 

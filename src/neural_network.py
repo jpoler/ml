@@ -1,9 +1,8 @@
 import numpy as np
 import numpy.typing as npt
 from scipy.special import softmax # type: ignore
-from typing import Any, List
+from typing import List
 
-from constants import convergence_epsilon
 from model import Model
 
 class NeuralNetwork(Model):
@@ -22,7 +21,6 @@ class NeuralNetwork(Model):
                 Ws.append(np.random.random((self.hidden_units[i+1], self.hidden_units[i] + 1)))
         Ws.append(np.random.random((y.shape[1], self.hidden_units[-1] + 1)))
         print(f"Ws: {[W.shape for W in Ws]}")
-        w_len = sum(W.size for W in Ws)
         for batch in range(self.max_iterations):
             # feed forward
             sample_idx = np.random.randint(n, size=self.batch_size)

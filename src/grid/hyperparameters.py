@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
-from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Type
+from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Sequence, Type
 
 from data.data import Data
 from metrics.regression import mean_squared_error
@@ -20,13 +20,13 @@ class PlotData:
 @dataclass
 class ParameterSpace(Generic[M]):
     model: Type[M]
-    keyword: str
     base_parameters: Parameters
     data: Iterable[Data]
     parameters: Iterable[Parameters]
+    keyword: Optional[str] = None
 
-    def __init__(self, model: Type[M], keyword: str, base_parameters: Parameters, space: Iterable[Any], base_data: Data, data_slices: Iterable[slice]) -> None:
-        parameter_gen = parameter_generator(space, keyword, base_parameters)
+    def __init__(self, model: Type[M], base_parameters: Parameters, space: Iterable[Any], base_data: Data, data_slices: Iterable[slice], keyword: Optional[str] = None) -> None:
+        parameter_gen = parameter_generator(space, base_parameters, keyword)
         data_gen = data_generator(base_data, data_slices)
         self.model = model
         self.keyword = keyword
@@ -55,10 +55,11 @@ MetricGridSequence = Sequence[Sequence[float]]
 MetricCallable = Callable[[EvaluatedCell], float]
 GridMetricCallable = Callable[[EvaluatedCellGridIterable[M]], MetricGridList]
 
-def parameter_generator(space: Iterable[Any], keyword: str, base_parameters: Parameters) -> Iterable[Parameters]:
+def parameter_generator(space: Iterable[Any], base_parameters: Parameters, keyword: Optional[str] = None) -> Iterable[Parameters]:
     for p in space:
         d = dict(base_parameters)
-        d.update({keyword: p})
+        if keyword:
+            d.update({keyword: p})
         yield d
 
 def single_slices(low: int, high: int) -> Iterable[slice]:
@@ -153,8 +154,8 @@ def plot_classification_predictions(plt: Any, grid: EvaluatedCellGridSequence[M]
             yy_flat = yy.flatten()
             xx_flat = xx_flat.reshape((len(xx_flat), 1))
             yy_flat = yy_flat.reshape((len(yy_flat), 1))
-            grid = np.hstack((xx_flat, yy_flat))
-            predictions = np.argmax(cell.model.predict(grid), axis=1)
+            np_grid = np.hstack((xx_flat, yy_flat))
+            predictions = np.argmax(cell.model.predict(np_grid), axis=1)
             zz = predictions.reshape(xx.shape)
             axs[r,c].contourf(xx, yy, zz, cmap="Paired")
             for k in range(3):
@@ -236,7 +237,10 @@ def plot_metrics(plt: Any, grid: EvaluatedCellGridSequence[M], metric: GridMetri
     fig, axs = plt.subplots(1, len(metrics), figsize=(8*len(grid), 8))
     for c, m in enumerate(metrics):
         parameter_space = grid[c][0].parameter_space
-        p = [cell.parameters[parameter_space.keyword] for cell in grid[c]]
+        if parameter_space.keyword:
+            p = [cell.parameters[parameter_space.keyword] for cell in grid[c]]
+        else:
+            p = [len(cell.data.x_train) for cell in grid[c]]
         axs[c].plot(p, m)
         axs[c].set_title(f"{parameter_space.model.__name__}\n{parameter_space.keyword}")
         axs[c].set(xlabel=parameter_space.keyword, ylabel=metric.__name__)
