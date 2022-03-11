@@ -7,6 +7,7 @@ from data.data import Data
 from data.iris_data import iris_data
 from data.gaussian_classes import gaussian_class_data
 from logistic_regression import PolynomialBasisLogisticRegression
+from neural_network import NeuralNetwork
 from metrics.classification import confusion_matrix, f1_macro, f1_micro, precision, recall, multiclass_roc_auc
 from model import SC
 
@@ -36,13 +37,14 @@ gaussian_data = partial(gaussian_class_data,
                                 ]
                             ),
                         ],
-                        n_train=30,
-                        n_test=30)
+                        n_train=1000,
+                        n_test=1000)
 
 
 @pytest.mark.focus
 @pytest.mark.parametrize("model_init", [
-    partial(PolynomialBasisLogisticRegression, m_degrees=2),
+    # partial(PolynomialBasisLogisticRegression, m_degrees=2),
+    partial(NeuralNetwork, hidden_units=[10], batch_size=1, learning_rate=0.04, max_iterations=1000),
 ])
 @pytest.mark.parametrize("data_init", [
     gaussian_data,
@@ -58,7 +60,7 @@ def test_classification_models(model_init: Callable[[], SC], data_init: Callable
     f1_micros = 0.
     f1_macros = 0.
     pairwise_aucs = np.zeros((k, k))
-    epochs = 10
+    epochs = 1
     for i in range(epochs):
         data = data_init()
         model = model_init()
@@ -69,18 +71,18 @@ def test_classification_models(model_init: Callable[[], SC], data_init: Callable
         rs += recall(cm)
         f1_micros += f1_micro(cm)
         f1_macros += f1_macro(cm)
-        print(f"confusion matrix: {cm}")
-        print(f"precision: {ps}")
-        print(f"recall: {rs}")
+        print(f"confusion matrix:\n{cm}")
+        print(f"precision:\n{ps}")
+        print(f"recall:\n{rs}")
         S = model.soft_predict(data.x_test)
         overall_auc, pairwise_auc = multiclass_roc_auc(data.y_test, S)
         overall_aucs += overall_auc
         pairwise_aucs += pairwise_auc
-    print(f"average p: {(ps / float(epochs))}")
-    print(f"average r: {(rs / float(epochs))}")
+    print(f"average p:\n{(ps / float(epochs))}")
+    print(f"average r:\n{(rs / float(epochs))}")
     print(f"average f1_micro: {(f1_micros / float(epochs))}")
     print(f"average f1_macro: {(f1_macros / float(epochs))}")
-    print(f"average pairwise_aucs: {(pairwise_aucs / float(epochs))}")
+    print(f"average pairwise_aucs:\n{(pairwise_aucs / float(epochs))}")
     print(f"average overall_aucs: {(overall_aucs / float(epochs))}")
     assert np.all((ps / float(epochs)) > .5)
     assert np.all((rs / float(epochs)) > .5)

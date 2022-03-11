@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Generic, Iterable, List, Sequence, Type
 
 from data.data import Data
 from metrics.regression import mean_squared_error
+from metrics.classification import confusion_matrix, f1_macro
 from model import M, GBM
 
 Parameters = Dict[str, Any]
@@ -107,6 +108,13 @@ def mean_squared_error_metric_cell(cell: EvaluatedCell[M]) -> float:
 def mean_squared_error_metric(grid: EvaluatedCellGridIterable[M]) -> MetricGridList:
     return compute_metric(grid, mean_squared_error_metric_cell)
 
+def f1_macro_metric_cell(cell: EvaluatedCell[M]) -> float:
+    cm = confusion_matrix(cell.data.y_test, cell.predictions)
+    return f1_macro(cm)
+
+def f1_macro_metric(grid: EvaluatedCellGridIterable[M]) -> MetricGridList:
+    return compute_metric(grid, f1_macro_metric_cell)
+
 def fit_and_predict(cell: Cell[M]) -> EvaluatedCell[M]:
     inst = cell.parameter_space.model(**cell.parameters)
     inst.fit(cell.data.x_train, cell.data.y_train)
@@ -122,6 +130,38 @@ def plot_predictions(plt: Any, grid: EvaluatedCellGridSequence[M]) -> None:
         for r, cell in enumerate(col):
             axs[r, c].plot(cell.data.x_train, cell.data.y_train, "ro", cell.data.x_test, cell.data.y_test, "bo", cell.data.x_test, cell.predictions, "gx")
             param_string = "\n".join(sorted(f"{k}: {v:.{2}f}" for k, v in cell.parameters.items()))
+            axs[r, c].set_title(f"{cell.parameter_space.model.__name__}\n{param_string}")
+
+
+    for ax in axs.flat:
+        ax.set(xlabel='x', ylabel='y')
+    for ax in axs.flat:
+        ax.label_outer()
+
+def plot_classification_predictions(plt: Any, grid: EvaluatedCellGridSequence[M]) -> None:
+    fig, axs = plt.subplots(len(grid[0]), len(grid), figsize=(8*len(grid), 8*len(grid[0])))
+    for c, col in enumerate(grid):
+        for r, cell in enumerate(col):
+            minx = cell.data.x_train[:, 0].min() - 1
+            maxx = cell.data.x_train[:, 0].max() + 1
+            miny = cell.data.x_train[:, 1].min() - 1
+            maxy = cell.data.x_train[:, 1].max() + 1
+            xrange = np.arange(minx, maxx, 0.1)
+            yrange = np.arange(miny, maxy, 0.1)
+            xx, yy = np.meshgrid(xrange, yrange)  # type: ignore
+            xx_flat = xx.flatten()
+            yy_flat = yy.flatten()
+            xx_flat = xx_flat.reshape((len(xx_flat), 1))
+            yy_flat = yy_flat.reshape((len(yy_flat), 1))
+            grid = np.hstack((xx_flat, yy_flat))
+            predictions = np.argmax(cell.model.predict(grid), axis=1)
+            zz = predictions.reshape(xx.shape)
+            axs[r,c].contourf(xx, yy, zz, cmap="Paired")
+            for k in range(3):
+                row_ix = np.where(cell.data.y_train[:, k] == 1.0)
+                axs[r,c].scatter(cell.data.x_train[row_ix, 0], cell.data.x_train[row_ix, 1], cmap="Paired")
+
+            param_string = "\n".join(sorted(f"{k}: {v}" for k, v in cell.parameters.items()))
             axs[r, c].set_title(f"{cell.parameter_space.model.__name__}\n{param_string}")
 
 
